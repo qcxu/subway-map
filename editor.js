@@ -2091,14 +2091,15 @@
         function onClickSelectLineMode(event) {
           var hitResult = project.hitTest(event.point, hitOptions)
           if (hitResult) {
-            var segmentClicked = getSegmentClicked(hitResult)
+            var newSegmentClicked = getSegmentClicked(hitResult)
+            if (segmentClicked && segmentClicked.id != newSegmentClicked.id) {
+              segmentClicked.deselect()
+            }
+            segmentClicked = newSegmentClicked
             if (segmentClicked) {
               console.log('segment clicked')
               console.log(segmentClicked)
               segmentClicked.toggleSelect()
-              if (segmentClicked.isSelected) {
-                //setCurrentTrack()
-              }
               map.draw(drawSettings)
               return
             }
@@ -2647,6 +2648,9 @@
           if (!currentTrack || currentTrack.id !== track.id) {
             return
           }
+          console.log(track.id)
+          $('#track-name').val(track.id)
+
           $('#track-table tbody').empty()
           for (var i in track.stations) {
             var station = track.stations[i]
