@@ -2044,6 +2044,13 @@
 
         function onClickMajorStationMode(event) {
           console.log('onClickMajorStation')
+          console.log('segmentClicked: ' + segmentClicked)
+          if (segmentClicked) {
+            console.log('major station - segment clicked')
+            segmentClicked.deselect()
+            segmentClicked = null
+            map.draw(drawSettings)
+          }
           var hitResult = project.hitTest(event.point, hitOptions)
           // click on existing station or segment
           if (hitResult) {
@@ -2052,16 +2059,20 @@
               console.log('station clicked')
               if (stationClicked.id !== selectedStation.id && !stationClicked.offsetFactor && !selectedStation.offsetFactor) {
                 currentTrack.createSegment(stationClicked, selectedStation)
+                currentTrack.stations.push(stationClicked)
                 selectStation(stationClicked)
+                currentTrack.stationsMajor.push(stationClicked)
+                console.log('connect station', stationClicked.id)
+                currentTrack.notifyAllObservers()
               }
               map.draw(drawSettings)
               MetroFlow.revision.createRevision(map)
               return
             }
-            var segmentClicked = getSegmentClicked(hitResult)
-            if (segmentClicked) {
-              var offsetFactor = segmentClicked.getOffsetOf(event.point) / segmentClicked.length()
-              var stationNew = currentTrack.createStationOnSegment(segmentClicked, offsetFactor)
+            var currentSegment = getSegmentClicked(hitResult)
+            if (currentSegment) {
+              var offsetFactor = segment.getOffsetOf(event.point) / currentSegment.length()
+              var stationNew = currentTrack.createStationOnSegment(currentSegment, offsetFactor)
               map.draw(drawSettings)
               MetroFlow.revision.createRevision(map)
               // TODO: create elements based on track/map observer in interaction
@@ -2124,6 +2135,10 @@
         }
 
         function onClickSelectMode(event) {
+          if (segmentClicked) {
+            segmentClicked.deselect()
+            segmentClicked = null
+          }
           var hitResult = project.hitTest(event.point, hitOptions)
           if (hitResult) {
             var stationClicked = getStationClicked(hitResult, true)
@@ -2143,20 +2158,24 @@
         }
 
         function onClickSelectLineMode(event) {
+          if (selectedStation) {
+            selectedStation.deselect()
+            selectedStation = null
+          }
+
           var hitResult = project.hitTest(event.point, hitOptions)
           if (hitResult) {
             var newSegmentClicked = getSegmentClicked(hitResult)
+            if (!newSegmentClicked) return
             if (segmentClicked && segmentClicked.id != newSegmentClicked.id) {
               segmentClicked.deselect()
             }
             segmentClicked = newSegmentClicked
-            if (segmentClicked) {
-              console.log('segment clicked')
-              console.log(segmentClicked)
-              segmentClicked.toggleSelect()
-              map.draw(drawSettings)
-              return
-            }
+            console.log('segment clicked')
+            console.log(segmentClicked)
+            segmentClicked.toggleSelect()
+            map.draw(drawSettings)
+            return
           }
         }
 

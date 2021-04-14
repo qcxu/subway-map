@@ -1,0 +1,101 @@
+{
+  "tracks": [
+    {
+      "id": "616a6935-0ba4-47ef-aff7-4ee514cc73f9",
+      "segmentStyle": { "strokeColor": "#f67982", "strokeWidth": 8, "selectionColor": "#006400", "fullySelected": false },
+      "stationStyle": { "strokeColor": "#000000", "strokeWidth": 4, "fillColor": "white", "stationRadius": 8, "selectionColor": "#006400", "fullySelected": false },
+      "segments": [
+        {
+          "stationA": { "position": { "x": 187, "y": 34 }, "id": "ffbc2918", "name": "station-ffbc2918", "offsetFactor": null },
+          "stationB": { "position": { "x": 312, "y": 144 }, "id": "16aea1a8", "name": "station-16aea1a8", "offsetFactor": null },
+          "stationsUser": [
+            { "position": { "x": 187, "y": 34 }, "id": "ffbc2918", "name": "station-ffbc2918", "offsetFactor": null },
+            { "position": { "x": 312, "y": 144 }, "id": "16aea1a8", "name": "station-16aea1a8", "offsetFactor": null }
+          ],
+          "stationsAuto": [],
+          "id": "6f34a268-4a83-44b4-8a22-93e3290add2a"
+        },
+        {
+          "stationA": { "position": { "x": 312, "y": 144 }, "id": "16aea1a8", "name": "station-16aea1a8", "offsetFactor": null },
+          "stationB": { "position": { "x": 569, "y": 271 }, "id": "e714cbef", "name": "shared station", "offsetFactor": null },
+          "stationsUser": [
+            { "position": { "x": 312, "y": 144 }, "id": "16aea1a8", "name": "station-16aea1a8", "offsetFactor": null },
+            { "position": { "x": 569, "y": 271 }, "id": "e714cbef", "name": "shared station", "offsetFactor": null }
+          ],
+          "stationsAuto": [],
+          "id": "cc0fccf9-5416-4c72-b953-0918e48a0e6d"
+        },
+        {
+          "stationA": { "position": { "x": 569, "y": 271 }, "id": "e714cbef", "name": "shared station", "offsetFactor": null },
+          "stationB": { "position": { "x": 672, "y": 361 }, "id": "394d9b99", "name": "station-394d9b99", "offsetFactor": null },
+          "stationsUser": [
+            { "position": { "x": 569, "y": 271 }, "id": "e714cbef", "name": "shared station", "offsetFactor": null },
+            { "position": { "x": 672, "y": 361 }, "id": "394d9b99", "name": "station-394d9b99", "offsetFactor": null }
+          ],
+          "stationsAuto": [],
+          "id": "e87b205f-194e-42be-bb5f-ea609be1004f"
+        },
+        {
+          "stationA": { "position": { "x": 672, "y": 361 }, "id": "394d9b99", "name": "station-394d9b99", "offsetFactor": null },
+          "stationB": { "position": { "x": 894, "y": 459 }, "id": "d5a877f1", "name": "station-d5a877f1", "offsetFactor": null },
+          "stationsUser": [
+            { "position": { "x": 672, "y": 361 }, "id": "394d9b99", "name": "station-394d9b99", "offsetFactor": null },
+            { "position": { "x": 894, "y": 459 }, "id": "d5a877f1", "name": "station-d5a877f1", "offsetFactor": null }
+          ],
+          "stationsAuto": [],
+          "id": "e9a93496-d20d-4831-8f33-e9412b2534ac"
+        }
+      ],
+      "stationsMinor": []
+    },
+    {
+      "id": "4e829ef0-bbd4-4665-9f9e-cb1105426b59",
+      "segmentStyle": { "strokeColor": "#fff746", "strokeWidth": 8, "selectionColor": "#006400", "fullySelected": false },
+      "stationStyle": { "strokeColor": "#000000", "strokeWidth": 4, "fillColor": "white", "stationRadius": 8, "selectionColor": "#006400", "fullySelected": false },
+      "segments": [
+        {
+          "stationA": { "position": { "x": 746, "y": 91 }, "id": "4aecb21d", "name": "station-4aecb21d", "offsetFactor": null },
+          "stationB": { "position": { "x": 640, "y": 162 }, "id": "cddd9dca", "name": "station-cddd9dca", "offsetFactor": null },
+          "stationsUser": [
+            { "position": { "x": 746, "y": 91 }, "id": "4aecb21d", "name": "station-4aecb21d", "offsetFactor": null },
+            { "position": { "x": 640, "y": 162 }, "id": "cddd9dca", "name": "station-cddd9dca", "offsetFactor": null }
+          ],
+          "stationsAuto": [],
+          "id": "9eebed93-5c25-4c39-9868-d33b0ffa2aab"
+        },
+        {
+          "stationA": { "position": { "x": 569, "y": 271 }, "id": "e714cbef", "name": "shared station", "offsetFactor": null },
+          "stationB": { "position": { "x": 640, "y": 162 }, "id": "cddd9dca", "name": "station-cddd9dca", "offsetFactor": null },
+          "stationsUser": [
+            { "position": { "x": 569, "y": 271 }, "id": "e714cbef", "name": "shared station", "offsetFactor": null },
+            { "position": { "x": 640, "y": 162 }, "id": "cddd9dca", "name": "station-cddd9dca", "offsetFactor": null }
+          ],
+          "stationsAuto": [],
+          "id": "0ef0afd4-0e9a-4da8-8b25-32f1147edc0c"
+        },
+        {
+          "stationA": { "position": { "x": 569, "y": 271 }, "id": "e714cbef", "name": "shared station", "offsetFactor": null },
+          "stationB": { "position": { "x": 507, "y": 385 }, "id": "9c48245e", "name": "station-hello", "offsetFactor": null },
+          "stationsUser": [
+            { "position": { "x": 569, "y": 271 }, "id": "e714cbef", "name": "shared station", "offsetFactor": null },
+            { "position": { "x": 507, "y": 385 }, "id": "9c48245e", "name": "station-hello", "offsetFactor": null }
+          ],
+          "stationsAuto": [],
+          "id": "898bc4b2-bbe4-448f-8e3b-5833aaaf56e0"
+        },
+        {
+          "stationA": { "position": { "x": 507, "y": 385 }, "id": "9c48245e", "name": "station-hello", "offsetFactor": null },
+          "stationB": { "position": { "x": 314, "y": 436 }, "id": "9c4a7503", "name": "station-9c4a7503", "offsetFactor": null },
+          "stationsUser": [
+            { "position": { "x": 507, "y": 385 }, "id": "9c48245e", "name": "station-hello", "offsetFactor": null },
+            { "position": { "x": 314, "y": 436 }, "id": "9c4a7503", "name": "station-9c4a7503", "offsetFactor": null }
+          ],
+          "stationsAuto": [],
+          "id": "f4259a6e-8f2d-42d8-b622-1ada5e89c7a7"
+        }
+      ],
+      "stationsMinor": []
+    }
+  ],
+  "connections": []
+}
