@@ -2211,8 +2211,10 @@
           //        paper.view.center = view.center.add(offset);
           //        return;
           //    }
-
-          if (mode == modes.movestation && selectedStation) {
+          console.log(selectedStation)
+          if (selectedStation) {
+            console.log(selectedStation)
+            // if (mode == modes.movestation && selectedStation) {
             var position = event.point
             if (doSnap && selectedStation.doSnap) {
               position = MetroFlow.snap.snapPosition(currentTrack, selectedStation, event.point)
