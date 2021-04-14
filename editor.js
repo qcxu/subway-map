@@ -143,6 +143,54 @@
         var fillColor = 'white'
         var strokeWidth = 8
         var stationRadius = 1 * strokeWidth
+        var trackStrokeColor = [
+          '#f67982',
+          // '#ff94a4',
+          // '#ffbca3',
+          '#fff746',
+          '#bfe85f',
+          '#65d097',
+          '#75e6cf',
+          '#5cc4ff',
+          '#b486ff',
+          '#b09494',
+          '#E5303C',
+          '#F6802C',
+          '#FEC91A',
+          '#45A844',
+          '#3D84CA',
+          '#C1477F',
+          '#A59D90',
+          //'#F4897F',
+          '#FFA769',
+          '#FFD45C',
+          '#74C063',
+          '#86D0ED',
+          '#BF6992',
+          '#BAB4AA',
+          '#D8448B',
+          '#E57257',
+          '#FCAB1D',
+          '#45A384',
+          '#6285D1',
+          //'#9975BC',
+          '#999082',
+          '#EA83B9',
+          //'#E28876',
+          '#FFD773',
+          '#75BCA2',
+          '#85A5DD',
+          '#AB90C4',
+          '#CCC6BE',
+          '#E05865',
+          '#EA965C',
+          '#F4D069',
+          '#73AA72',
+          '#5D98C9',
+          '#D162A4',
+          '#A09D9A',
+        ]
+
         var selectionColor = rgbToHex(0, 100, 0)
 
         function componentToHex(c) {
@@ -154,12 +202,17 @@
           return '#' + componentToHex(r) + componentToHex(g) + componentToHex(b)
         }
 
+        function pickTrackStrokeColor(idx) {
+          var colors = trackStrokeColor
+          return colors[idx]
+        }
+
         var MapStyle = {}
 
         var TrackStyle = {}
 
         var SegmentStyle = {
-          strokeColor: rgbToHex(255, 0, 0),
+          strokeColor: trackStrokeColor[0],
           strokeWidth: strokeWidth,
           selectionColor: selectionColor,
           fullySelected: false,
@@ -211,6 +264,7 @@
           createSegmentStyle: createSegmentStyle,
           createStationMinorStyle: createStationMinorStyle,
           rgbToHex: rgbToHex,
+          pickTrackStrokeColor: pickTrackStrokeColor,
         }
 
         /***/
@@ -1046,7 +1100,7 @@
             this.id = util.uuidv4().substring(0, 8)
             this.path = null
             this.isSelected = false
-            this.name = 'station'
+            this.name = 'station-' + this.id
             this.textPositionRel = null
             this.doSnap = true
             return this
@@ -1199,7 +1253,7 @@
           station = station.Station(position, style)
           station.stationA = stationA
           station.stationB = stationB
-          station.name = 'minor station'
+          station.name = 'minor station-' + station.id
           station.doSnap = false
           return station
         }
@@ -2305,7 +2359,9 @@
             var newTrack = createTrack()
             MetroFlow.revision.createRevision(map)
             var segmentStyle = styles.createSegmentStyle()
-            segmentStyle.strokeColor = styles.rgbToHex(0, 0, 255)
+            console.log(map)
+            segmentStyle.strokeColor = styles.pickTrackStrokeColor(map.tracks.length - 1)
+            //segmentStyle.strokeColor = styles.rgbToHex(0, 0, 255)
             newTrack.segmentStyle = segmentStyle
             setCurrentTrack(newTrack)
           }
