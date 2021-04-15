@@ -54,20 +54,28 @@
       </div>
 
       <hr />
+
+      <div class="track-table-container">
+        <h4>Track Table</h4>
+        <label>Track name </label><input id="track-name" type="text" size="30"/>
+        <table id="track-table">
+          <thead>
+            <th>station name</th>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input type="text" value="station-name" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       <div class="map-style-widget">
         <h4>Current Selection</h4>
         selected station: <span id="selected-station"></span>
-        <br />
-        selected track: <span id="selected-track"></span>
       </div>
 
-      <hr />
-      <div class="map-style-widget">
-        <h4>Map Style</h4>
-        <input type="checkbox" id="checkbox-minor-station-names" checked /> minor names
-        <br />
-        <input type="checkbox" id="checkbox-debug" /> debug
-      </div>
+      
 
       <hr />
 
@@ -88,21 +96,14 @@
       </div>
 
       <hr />
-
-      <div class="track-table-container">
-        <h4>Track Table</h4>
-        <label>Track name </label><input id="track-name" type="text" value="" size="30"/>
-        <table id="track-table">
-          <thead>
-            <th>station name</th>
-          </thead>
-          <tbody>
-            <tr>
-              <td><input type="text" value="station-name" /></td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="map-style-widget">
+        <h4>Map Style</h4>
+        <input type="checkbox" id="checkbox-minor-station-names" checked /> minor names
+        <br />
+        <input type="checkbox" id="checkbox-debug" /> debug
       </div>
+
+      
     </div>
   </body>
 </html>

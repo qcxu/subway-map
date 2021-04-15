@@ -1478,6 +1478,12 @@
             stationB.name = segmentData.stationB.name
             segment = track.createSegment(stationA, stationB)
           }
+          if (!track.stations.includes(stationA)) {
+            track.stations.push(stationA)
+          }
+          if (!track.stations.includes(stationB)) {
+            track.stations.push(stationB)
+          }
           console.assert(segment)
 
           for (var i in segmentData.stationsUser) {
@@ -2032,7 +2038,7 @@
           console.log(stationClicked)
           if (stationClicked.isSelected) {
             selectedStation = stationClicked
-            $('#selected-station').html(selectedStation.id)
+            $('#selected-station').html(selectedStation.name)
           } else {
             selectedStation = null
             $('#selected-station').html('none')
@@ -2071,7 +2077,7 @@
             }
             var currentSegment = getSegmentClicked(hitResult)
             if (currentSegment) {
-              var offsetFactor = segment.getOffsetOf(event.point) / currentSegment.length()
+              var offsetFactor = currentSegment.getOffsetOf(event.point) / currentSegment.length()
               var stationNew = currentTrack.createStationOnSegment(currentSegment, offsetFactor)
               map.draw(drawSettings)
               MetroFlow.revision.createRevision(map)
@@ -2209,37 +2215,6 @@
             connectionStationB = null
           }
         }
-
-        // function onClickShareStationMode(event) {
-        //   console.log('onClickShareStationMode')
-        //   var hitResult = project.hitTest(event.point, hitOptions)
-        //   if (!hitResult) {
-        //     return
-        //   }
-        //   var stationClicked = getStationClicked(hitResult, false)
-        //   if (!stationClicked) {
-        //     return
-        //   }
-
-        //   if (!shareStationA) {
-        //     shareStationA = stationClicked
-        //     shareStationA.select()
-        //     map.draw(drawSettings)
-        //   } else {
-        //     connectionStationB = stationClicked
-        //     if (connectionStationA.id === connectionStationB.id) {
-        //       connectionStationB = null
-        //       return
-        //     }
-        //     console.log('create new connection', connectionStationA.id, connectionStationB.id)
-        //     map.createConnection(connectionStationA, connectionStationB)
-        //     connectionStationA.deselect()
-        //     map.draw(drawSettings)
-        //     MetroFlow.revision.createRevision(map)
-        //     connectionStationA = null
-        //     connectionStationB = null
-        //   }
-        // }
 
         var startPosition = null
 
@@ -2727,6 +2702,8 @@
           }
           console.log(track.id)
           $('#track-name').val(track.id)
+          $('#track-name').data('trackid', track.id)
+          $('#track-name').bind('change', trackNameInputChange)
 
           $('#track-table tbody').empty()
           for (var i in track.stations) {
@@ -2750,6 +2727,17 @@
             console.log('station', station)
             console.log('value', $(this).val())
             station.name = $(this).val()
+            signalTrackInfoChanged(currentTrack)
+          }
+
+          function trackNameInputChange() {
+            console.log('trackNameInputChange')
+            // var trackId = $(this).data('trackid')
+            // console.log('trackid', trackId)
+            // var station = track.findStation(stationId)
+            // console.log('station', station)
+            // console.log('value', $(this).val())
+            track.id = $(this).val()
             signalTrackInfoChanged(currentTrack)
           }
 
