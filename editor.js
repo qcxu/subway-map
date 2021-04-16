@@ -2069,6 +2069,7 @@
                 selectStation(stationClicked)
                 currentTrack.stationsMajor.push(stationClicked)
                 console.log('connect station', stationClicked.id)
+                console.log(currentTrack.stationsMajor)
                 currentTrack.notifyAllObservers()
               }
               map.draw(drawSettings)
@@ -2145,6 +2146,10 @@
             segmentClicked.deselect()
             segmentClicked = null
           }
+          if (selectedStation) {
+            selectedStation.deselect()
+            selectedStation = null
+          }
           var hitResult = project.hitTest(event.point, hitOptions)
           if (hitResult) {
             var stationClicked = getStationClicked(hitResult, true)
@@ -2153,13 +2158,18 @@
               selectStation(stationClicked)
               return
             }
-            // var segmentClicked = getSegmentClicked(hitResult)
-            // if (segmentClicked) {
-            //   console.log('segment clicked')
-            //   segmentClicked.toggleSelect()
-            //   map.draw(drawSettings)
-            //   return
-            // }
+
+            var newSegmentClicked = getSegmentClicked(hitResult)
+            if (!newSegmentClicked) return
+            if (segmentClicked && segmentClicked.id != newSegmentClicked.id) {
+              segmentClicked.deselect()
+            }
+            segmentClicked = newSegmentClicked
+            console.log('segment clicked')
+            console.log(segmentClicked)
+            segmentClicked.toggleSelect()
+            map.draw(drawSettings)
+            return
           }
         }
 
@@ -2308,12 +2318,109 @@
             map.draw(drawSettings)
           }
 
-          function onTrackOtherChanged(stationId, track) {
-            MetroFlow.revision.createRevision(map)
-            map.removeStation(stationId)
-            map.draw(drawSettings)
+          function onTrackOtherChanged(id) {
+            console.log('track.removeStation() on track:', currentTrack.id)
+            var stationsOnSegment = []
+            var newStation = []
+            var segmentRemoved = []
+            var segmentForMinor
+            for (var i = currentTrack.segments.length - 1; i >= 0; i--) {
+              // loop backwards because we splice the array
+              var segment = currentTrack.segments[i]
+              if (segment.stationA.id === id || segment.stationB.id === id) {
+                var stationsRemoved = segment.getAllOnSegmentStations()
+                stationsOnSegment = stationsOnSegment.concat(stationsRemoved)
+                if (segment.stationA.id === id) {
+                  var pos = currentTrack.segments.indexOf(segment)
+                  if (pos > -1) {
+                    newStation.push(segment.stationB)
+                    segmentRemoved.push(segment)
+                  }
+                } else if (segment.stationB.id === id) {
+                  var pos = currentTrack.segments.indexOf(segment)
+                  if (pos > -1) {
+                    newStation.push(segment.stationA)
+                    segmentRemoved.push(segment)
+                  }
+                }
+                if (newStation.length > 2) {
+                  alert("the station connects to more than 2 major stations in this track. It can't be deleted.")
+                  console.log("the station connects to more than 2 major stations in this track. It can't be deleted.")
+                  return
+                }
+              } else {
+                // the minor station to be removed
+                segmentForMinor = segment
+              }
+            }
 
-            track.notifyAllObservers()
+            // If the deleted station is a major station and connected to only two major stations in a track
+            if (newStation && newStation.length == 2) {
+              // Remove two segments
+              for (var i in segmentRemoved) {
+                var pos = currentTrack.segments.indexOf(segmentRemoved[i])
+                currentTrack.segments.splice(pos, 1)
+              }
+              // Remove minor stations on segments
+              for (var j in stationsOnSegment) {
+                removeFromTrackState(currentTrack, stationsOnSegment[j].id)
+              }
+
+              // create new segment between newStationA and newStationB
+              var newSegment = currentTrack.createSegment(newStation[0], newStation[1])
+              // add back minor stations on the new segment
+              for (var i = 0; i < stationsOnSegment.length; i++) {
+                var offsetFactor = (i + 1) / (stationsOnSegment.length + 1)
+                var stationNew = currentTrack.createStationOnSegment(newSegment, offsetFactor)
+                stationNew.id = stationsOnSegment[i].id
+                stationNew.name = stationsOnSegment[i].name
+                //map.draw(drawSettings)
+
+                // TODO: create elements based on track/map observer in interaction
+                var stationElement = MetroFlow.interaction.createStationElement(stationNew, currentTrack, onRemoveStation)
+                contextmenu.createStationContextMenu(stationElement.attr('id'), onRemoveStation)
+              }
+
+              removeFromTrackState(currentTrack, id)
+              map.draw(drawSettings)
+              MetroFlow.revision.createRevision(map)
+              currentTrack.notifyAllObservers()
+              sidebar.notifyTrackChanged(currentTrack)
+            } else if (newStation && newStation.length == 1) {
+              alert("the station is the first or last major station in this track. It can't be deleted.")
+              console.log("the station is the first or last major station in this track. It can't be deleted.")
+            } else {
+              if (segmentForMinor) {
+                segmentForMinor.removeStation(id)
+                removeFromTrackState(currentTrack, id)
+                map.draw(drawSettings)
+                MetroFlow.revision.createRevision(map)
+                currentTrack.notifyAllObservers()
+                sidebar.notifyTrackChanged(currentTrack)
+              }
+            }
+          }
+
+          function removeFromTrackState(track, id) {
+            var station = track.findStation(id)
+            if (station) {
+              console.log('track.removeStation()', station)
+              var pos = track.stations.indexOf(station)
+              if (pos > -1) {
+                station.notifyBeforeRemove()
+                track.stations.splice(pos, 1)
+              }
+              pos = track.stationsMajor.indexOf(station)
+              if (pos > -1) {
+                station.notifyBeforeRemove()
+                track.stationsMajor.splice(pos, 1)
+              }
+              pos = track.stationsMinor.indexOf(station)
+              if (pos > -1) {
+                station.notifyBeforeRemove()
+                track.stationsMinor.splice(pos, 1)
+              }
+            }
           }
 
           function majorStationButtonClicked() {
@@ -2712,11 +2819,11 @@
           }
 
           function addStationRow(station) {
-            //var markup = "<tr><td><input id='station-row-" + station.id + "' type='text' name='station' value='" + station.name + "' data-stationid='" + station.id + "'><button button id = 'button-remove-station-" + station.id + "' type='button' name='station' value='" + station.name + "' data-stationid='" + station.id + "' > remove</button ></td ></tr>"
-            var markup = "<tr><td><input id='station-row-" + station.id + "' type='text' name='station' value='" + station.name + "' data-stationid='" + station.id + "'></td ></tr>"
+            var markup = "<tr><td><input id='station-row-" + station.id + "' type='text' name='station' value='" + station.name + "' data-stationid='" + station.id + "'><button button id = 'button-remove-station-" + station.id + "' type='button' name='station' value='" + station.name + "' data-stationid='" + station.id + "' > remove</button ></td ></tr>"
+            //var markup = "<tr><td><input id='station-row-" + station.id + "' type='text' name='station' value='" + station.name + "' data-stationid='" + station.id + "'></td ></tr>"
             $('#track-table tbody').append(markup)
             $('#station-row-' + station.id).bind('change', stationNameInputChange)
-            //$('#button-remove-station-' + station.id).bind('click', stationNameRemove)
+            $('#button-remove-station-' + station.id).bind('click', stationNameRemove)
           }
 
           function stationNameInputChange() {
@@ -2745,11 +2852,11 @@
             console.log('stationNameRemove')
             var stationId = $(this).data('stationid')
             console.log('stationid', stationId)
-            var station = track.findStation(stationId)
+            var station = currentTrack.findStation(stationId)
             console.log('station', station)
             console.log('value', $(this).val())
             station.name = $(this).val()
-            signalTrackOtherChanged(stationId, currentTrack)
+            signalTrackOtherChanged(stationId)
           }
         }
 
