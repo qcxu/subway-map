@@ -21,7 +21,7 @@
   <body>
     <div id="toolbar">
       <div class="toolbar-buttons">
-        <i id="button-select" class="fas fa-mouse-pointer fa-lg fa-fw" title="select station"></i>
+        <i id="button-select" class="fas fa-mouse-pointer fa-lg fa-fw" title="select station/line"></i>
         <!-- <i id="button-line-select" class="fas fa-minus fa-lg fa-fw" data-fa-transform="rotate-30" title="select line"></i> -->
         <i id="button-major-station" class="far fa-circle fa-lg fa-fw" title="add/connect major station"></i>
         <!-- <input id="button-select" type="image" src="icon_select.svg" width="32px" /> -->
@@ -70,9 +70,6 @@
         </table>
       </div>
 
-      <div class="map-style-widget">
-        
-      </div>
       <hr />
 
       <div class="station-style-widget">
@@ -89,6 +86,20 @@
           <label>Station stroke width: </label>
           <div id="station-stroke-width-slider"></div>
         </div>
+      </div>
+
+      <hr/>
+      <div class="map-style-widget">
+        <h5>Instructions</h5>
+        <i class="fas fa-mouse-pointer fa-sm fa-fw" title="select station/line"></i>: Select a station or a line<br/>
+        <i class="far fa-circle fa-sm fa-fw" title="add/connect major station"></i>: Create a new station<br/>
+        <i class="fas fa-link fa-sm fa-fw"  title="add connection"></i>: Click on two stations to create a connecting tunnel<br/>
+        <strong>Share station in multiple lines</strong>: <br/>
+        to connect to an existing station to a new line<br/>
+        1. make sure the current selected station is the last station you want to connect with the existing station in the correct line (If not, click <i class="fas fa-mouse-pointer fa-sm fa-fw" title="select station/line"></i> and select the last station you want to connect with, and click on the line to make sure you are on the correct line)<br/> 
+        2. click <i class="far fa-circle fa-sm fa-fw" title="add/connect major station"></i> to select the existing station.<br/>
+
+
       </div>
 
       <!-- <hr />
