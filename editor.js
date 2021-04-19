@@ -442,7 +442,7 @@
           },
           findStation: function (id) {
             for (var i in this.stations) {
-              if (this.stations[i].id === id) {
+              if (this.stations[i].id == id) {
                 return this.stations[i]
               }
             }
@@ -986,7 +986,7 @@
           },
           findStation: function (id) {
             for (var i in this.stations) {
-              if (this.stations[i].id === id) {
+              if (this.stations[i].id == id) {
                 return this.stations[i]
               }
             }
@@ -1965,6 +1965,11 @@
           selectedStation = null
           map.removeStation(stationId)
           map.draw(drawSettings)
+          MetroFlow.revision.createRevision(map)
+          for (var i in map.tracks) {
+            sidebar.notifyTrackChanged(map.tracks[i])
+          }
+          currentTrack.notifyAllObservers()
         }
 
         function createTrack() {
@@ -2142,19 +2147,16 @@
         }
 
         function onClickSelectMode(event) {
-          if (segmentClicked) {
-            segmentClicked.deselect()
-            segmentClicked = null
-          }
-          if (selectedStation) {
-            selectedStation.deselect()
-            selectedStation = null
-          }
           var hitResult = project.hitTest(event.point, hitOptions)
           if (hitResult) {
             var stationClicked = getStationClicked(hitResult, true)
             if (stationClicked) {
               console.log('selectedStation', selectedStation)
+              // deselect segment
+              if (segmentClicked) {
+                segmentClicked.deselect()
+                segmentClicked = null
+              }
               selectStation(stationClicked)
               return
             }
@@ -2165,6 +2167,11 @@
               segmentClicked.deselect()
             }
             segmentClicked = newSegmentClicked
+            // deselect station
+            if (selectedStation) {
+              selectedStation.deselect()
+              selectedStation = null
+            }
             console.log('segment clicked')
             console.log(segmentClicked)
             segmentClicked.toggleSelect()
@@ -2271,7 +2278,6 @@
           //    }
           console.log(selectedStation)
           if (selectedStation) {
-            console.log(selectedStation)
             // if (mode == modes.movestation && selectedStation) {
             var position = event.point
             if (doSnap && selectedStation.doSnap) {
@@ -2458,12 +2464,12 @@
             }
             selectedStation = null
             var newTrack = createTrack()
-            MetroFlow.revision.createRevision(map)
             var segmentStyle = styles.createSegmentStyle()
             console.log(map)
             segmentStyle.strokeColor = styles.pickTrackStrokeColor(map.tracks.length - 1)
             //segmentStyle.strokeColor = styles.rgbToHex(0, 0, 255)
             newTrack.segmentStyle = segmentStyle
+            MetroFlow.revision.createRevision(map)
             setCurrentTrack(newTrack)
           }
 
@@ -2665,6 +2671,8 @@
             segmentStyle.strokeColor = color
             currentTrack.setSegmentStyle(segmentStyle)
             map.draw(drawSettings)
+            MetroFlow.revision.createRevision(map)
+            currentTrack.notifyAllObservers()
           }
 
           function onTrackWidthChanged(value) {
@@ -2672,22 +2680,30 @@
             segmentStyle.strokeWidth = value
             currentTrack.setSegmentStyle(segmentStyle)
             map.draw(drawSettings)
+            MetroFlow.revision.createRevision(map)
+            currentTrack.notifyAllObservers()
           }
 
           function onStationRadiusChanged(radius) {
             console.log('onStationRadiusChanged', radius)
             currentTrack.stationStyle.stationRadius = radius
             map.draw(drawSettings)
+            MetroFlow.revision.createRevision(map)
+            currentTrack.notifyAllObservers()
           }
 
           function onStationStrokeWidthChanged(strokeWidth) {
             currentTrack.stationStyle.strokeWidth = strokeWidth
             map.draw(drawSettings)
+            MetroFlow.revision.createRevision(map)
+            currentTrack.notifyAllObservers()
           }
 
           function onStationStrokeColorChanged(color) {
             currentTrack.stationStyle.strokeColor = color
             map.draw(drawSettings)
+            MetroFlow.revision.createRevision(map)
+            currentTrack.notifyAllObservers()
           }
         }
 
@@ -2718,8 +2734,28 @@
           $('#station-stroke-width-slider').slider('value', track.stationStyle.strokeWidth)
 
           currentTrack = track
-          $('#selected-track').html(currentTrack.id)
+          //$('#selected-track').html(currentTrack.id)
+
+          console.log(currentTrack.id)
+          $('.badge.bg-secondary').attr('style', 'background-color: ' + currentTrack.segmentStyle.strokeColor + '!important')
+          $('#track-name').val(currentTrack.id)
+          $('#track-name').data('trackid', currentTrack.id)
+          //$('#track-name').bind('change', trackNameInputChange)
+          $('#track-name-change').bind('click', trackNameInputChange)
+
           updateTableTrack(track)
+
+          function trackNameInputChange() {
+            console.log('trackNameInputChange')
+            // var trackId = $(this).data('trackid')
+            // console.log('trackid', trackId)
+            // var station = track.findStation(stationId)
+            // console.log('station', station)
+            // console.log('value', $(this).val())
+            currentTrack.id = $('#track-name').val()
+            console.log('track: ' + currentTrack.id)
+            signalTrackInfoChanged(currentTrack)
+          }
         }
 
         function setExampleMapAction(callback) {
@@ -2807,10 +2843,6 @@
           if (!currentTrack || currentTrack.id !== track.id) {
             return
           }
-          console.log(track.id)
-          $('#track-name').val(track.id)
-          $('#track-name').data('trackid', track.id)
-          $('#track-name').bind('change', trackNameInputChange)
 
           $('#track-table tbody').empty()
           for (var i in track.stations) {
@@ -2819,7 +2851,7 @@
           }
 
           function addStationRow(station) {
-            var markup = "<tr><td><input id='station-row-" + station.id + "' type='text' name='station' value='" + station.name + "' data-stationid='" + station.id + "'><button button id = 'button-remove-station-" + station.id + "' type='button' name='station' value='" + station.name + "' data-stationid='" + station.id + "' > remove</button ></td ></tr>"
+            var markup = "<tr><td><input class='form-control form-control-sm' id='station-row-" + station.id + "' type='text' name='station' value='" + station.name + "' data-stationid='" + station.id + "'><button button id = 'button-remove-station-" + station.id + "' type='button' class='btn btn-outline-primary btn-sm' name='station' value='" + station.name + "' data-stationid='" + station.id + "' > remove</button ></td ></tr>"
             //var markup = "<tr><td><input id='station-row-" + station.id + "' type='text' name='station' value='" + station.name + "' data-stationid='" + station.id + "'></td ></tr>"
             $('#track-table tbody').append(markup)
             $('#station-row-' + station.id).bind('change', stationNameInputChange)
@@ -2834,18 +2866,7 @@
             console.log('station', station)
             console.log('value', $(this).val())
             station.name = $(this).val()
-            signalTrackInfoChanged(currentTrack)
-          }
-
-          function trackNameInputChange() {
-            console.log('trackNameInputChange')
-            // var trackId = $(this).data('trackid')
-            // console.log('trackid', trackId)
-            // var station = track.findStation(stationId)
-            // console.log('station', station)
-            // console.log('value', $(this).val())
-            track.id = $(this).val()
-            signalTrackInfoChanged(currentTrack)
+            signalTrackInfoChanged(track)
           }
 
           function stationNameRemove() {
