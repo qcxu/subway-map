@@ -13,7 +13,7 @@ canvas[resize] {
   position: absolute;
   top: 40px;
   width: 80%;
-  height: 95%;
+  height: 120%;
   overflow: auto;
 }
 
@@ -101,7 +101,7 @@ canvas[resize] {
   padding: 20px;
 }
 
-i {
+#toolbar i {
   margin-right: 0.4em;
   cursor: pointer;
 }

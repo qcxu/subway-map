@@ -1952,13 +1952,13 @@
           setNewMap(newMap)
           setCurrentTrack(createTrack())
           $('#button-major-station').addClass('fa-border')
-          //    MetroFlow.zoom.enableZoomOnCanvas(map);
+          //MetroFlow.zoom.enableZoomOnCanvas(map)
         }
 
         function setNewMap(newMap) {
           map = newMap
           MetroFlow.interaction.setCurrentMap(newMap)
-          //    MetroFlow.zoom.setNewMap(newMap);
+          //MetroFlow.zoom.setNewMap(newMap)
         }
 
         function onRemoveStation(stationId) {
@@ -2432,28 +2432,28 @@
           function majorStationButtonClicked() {
             console.log('major station drawing selected')
             $('.fa-lg').removeClass('fa-border')
-            $('.fa-circle').addClass('fa-border')
+            $('#toolbar .fa-circle').addClass('fa-border')
             mode = modes.majorstation
           }
 
           function minorStationButtonClicked() {
             console.log('minor station drawing selected')
             $('.fa-lg').removeClass('fa-border')
-            $('.fa-sliders-h').addClass('fa-border')
+            $('#toolbar .fa-sliders-h').addClass('fa-border')
             mode = modes.minorstation
           }
 
           function selectButtonClicked() {
             console.log('selection station mode selected')
             $('.fa-lg').removeClass('fa-border')
-            $('.fa-mouse-pointer').addClass('fa-border')
+            $('#toolbar .fa-mouse-pointer').addClass('fa-border')
             mode = modes.select
           }
 
           function selectLineButtonClicked() {
             console.log('selection line mode selected')
             $('.fa-lg').removeClass('fa-border')
-            $('.fa-minus').addClass('fa-border')
+            $('#toolbar .fa-minus').addClass('fa-border')
             mode = modes.selectline
           }
 
@@ -2476,7 +2476,7 @@
           function newConnectionButtionClicked() {
             console.log('new connection button clicked')
             $('.fa-lg').removeClass('fa-border')
-            $('.fa-link').addClass('fa-border')
+            $('#toolbar .fa-link').addClass('fa-border')
             connectionStationA = null
             connectionStationB = null
             mode = modes.createConnection
@@ -2492,7 +2492,7 @@
           function moveStationButtonClicked() {
             console.log('move station button clicked')
             $('.fa-lg').removeClass('fa-border')
-            $('.fa-hand-paper').addClass('fa-border')
+            $('#toolbar .fa-hand-paper').addClass('fa-border')
             mode = modes.movestation
           }
 
