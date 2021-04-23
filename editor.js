@@ -143,6 +143,7 @@
         var fillColor = 'white'
         var strokeWidth = 8
         var stationRadius = 1 * strokeWidth
+        // List of track colors
         var trackStrokeColor = [
           '#f67982',
           // '#ff94a4',
@@ -634,7 +635,6 @@
               }
               this.drawStationNames(paths, drawSettings)
             }
-            //console.timeEnd('map.draw')
           },
           clear: function () {
             this.tracks = []
@@ -1013,6 +1013,11 @@
                   station.notifyBeforeRemove()
                   track.stationsMinor.splice(pos, 1)
                 }
+                pos = track.stationsUser.indexOf(station)
+                if (pos > -1) {
+                  station.notifyBeforeRemove()
+                  track.stationsUser.splice(pos, 1)
+                }
               }
             }
             removeFromTrackState(this, id)
@@ -1329,11 +1334,14 @@
       /* 8 */ /***/ function (module, exports, __webpack_require__) {
         var metromap = __webpack_require__(4)
 
-        function saveMap(map) {
+        // Save map json for paper.js
+        function saveMap(map, serialize) {
           var mapData = {}
           mapData.tracks = []
           mapData.connections = []
           for (var i in map.tracks) {
+            // skip empty lines
+            if (map.tracks[i].segments.length == 0) continue
             var trackData = createTrackData(map.tracks[i])
             mapData.tracks.push(trackData)
           }
@@ -1342,8 +1350,193 @@
             mapData.connections.push(connectionData)
           }
           console.log(mapData)
-          var mapJSONString = JSON.stringify(mapData)
-          return mapJSONString
+          // if serialize is true, convert json to string
+          if (serialize) {
+            var mapJSONString = JSON.stringify(mapData)
+            return mapJSONString
+          } else {
+            return mapData
+          }
+        }
+
+        // Save map json for d3
+        function saveMapD3(map, serialize) {
+          var mapData = {}
+          mapData.lines = []
+          mapData.stations = []
+          var stations = []
+          for (var i in map.tracks) {
+            // skip empty lines
+            if (map.tracks[i].segments.length == 0) continue
+            var trackData = createTrackDataJson(map.tracks[i])
+            if (!trackData) return
+            mapData.lines.push(trackData.line)
+            stations = stations.concat(trackData.d3stations)
+          }
+          var textLabels = getLabelsJson()
+          var uniqueObject = {}
+          for (var i in stations) {
+            objId = stations[i]['id']
+            uniqueObject[objId] = stations[i]
+            uniqueObject[objId]['labelPosition'] = textLabels[stations[i]['name']]
+          }
+          for (i in uniqueObject) {
+            mapData.stations.push(uniqueObject[i])
+          }
+
+          console.log(mapData)
+
+          if (serialize) {
+            var mapJSONString = JSON.stringify(mapData)
+            return mapJSONString
+          } else {
+            return mapData
+          }
+        }
+
+        function getLabelsJson() {
+          var pointTexts = project.getItems({
+            class: PointText,
+          })
+          var obj = {}
+          for (var i in pointTexts) {
+            obj[pointTexts[i].content] = [pointTexts[i].point.x, pointTexts[i].point.y]
+          }
+          return obj
+        }
+
+        function createTrackDataJson(track) {
+          var trackData = {}
+          trackData.id = track.id
+          trackData.segmentStyle = track.segmentStyle
+          trackData.stationStyle = track.stationStyle
+          trackData.segments = []
+          trackData.stationsMinor = []
+          trackData.line = {}
+          trackData.line.color = track.segmentStyle.strokeColor
+          trackData.line.name = track.id
+          trackData.line.stations = []
+          trackData.d3stations = []
+          // get all paper.js path segments on this track
+          var segmentsOnTrack = project.getItems({
+            strokeColor: trackData.segmentStyle.strokeColor,
+            class: Path,
+          })
+          for (var j in track.segments) {
+            var segmentData = createSegmentDataJson(track.segments[j])
+            trackData.segments.push(segmentData)
+          }
+          var dict = [],
+            obj = {}
+          // create an object, key is station point position, value is a list of station points (and the segment) that connect to the key station.
+          for (var i in segmentsOnTrack) {
+            var len = segmentsOnTrack[i].segments.length
+            // Get first/last points on this segment, which are the stations of this segment, other points are for paths
+            var first = segmentsOnTrack[i].segments[0].point.toString()
+            var last = segmentsOnTrack[i].segments[len - 1].point.toString()
+            //
+            obj[first] ? obj[first].push({ id: last, seg: segmentsOnTrack[i].segments }) : (obj[first] = [{ id: last, seg: segmentsOnTrack[i].segments }])
+            obj[last] ? obj[last].push({ id: first, seg: segmentsOnTrack[i].segments }) : (obj[last] = [{ id: first, seg: segmentsOnTrack[i].segments }])
+
+            // In dict, find station points that occur only once, which will be the first and last station on this track
+            var index = dict.indexOf(first)
+            if (index > -1) {
+              dict.splice(index, 1)
+            } else {
+              dict.push(first)
+            }
+
+            index = dict.indexOf(last)
+            if (index > -1) {
+              dict.splice(index, 1)
+            } else {
+              dict.push(last)
+            }
+          }
+          console.log(dict)
+          console.log(obj)
+
+          if (dict.length != 2) {
+            // There should only be two stations (first/last) left in dict. Otherwise, it's wrong.
+            return
+          }
+
+          // pick dict[1] as start station
+          var start = getd3Station(track.stations, dict[1])
+
+          trackData.d3stations.push(start)
+          trackData.line.stations.push(start.id)
+          var prev, target
+          current = dict[1]
+          var path = []
+          // loop through the object to order path between the stations
+          while (current !== dict[0]) {
+            var idx = obj[current][0].id == prev ? 1 : 0
+            target = getd3Station(track.stations, obj[current][idx].id)
+            trackData.d3stations.push(target)
+            trackData.line.stations.push(target.id)
+            var currentPath = obj[current][idx].seg
+            if (currentPath[0].point.toString() !== current) {
+              currentPath = currentPath.reverse()
+            }
+            currentPath.pop()
+            console.log(currentPath)
+            currentPath = currentPath.map(function (p) {
+              return [p.point.x, p.point.y]
+            })
+            path = path.concat(currentPath)
+            console.log(path)
+            prev = current
+            current = obj[current][idx].id
+          }
+
+          path.push(target.position)
+          console.log(path)
+
+          trackData.line.paths = [path]
+
+          return trackData
+        }
+
+        function getd3Station(stations, posStr) {
+          var target = stations.find(function (station) {
+            return station.position.toString() === posStr
+          })
+          return {
+            id: target.id,
+            name: target.name,
+            position: getCoordinate(target),
+          }
+        }
+
+        function getCoordinate(target) {
+          return [target.position.x, target.position.y]
+        }
+
+        function createSegmentDataJson(segment) {
+          var stationsUserData = []
+          for (var i in segment.stationsUser) {
+            stationsUserData.push(createStationDataJson(segment.stationsUser[i]))
+          }
+          var segmentData = {
+            stationA: createStationDataJson(segment.stationA),
+            stationB: createStationDataJson(segment.stationB),
+            stationsUser: stationsUserData,
+            // stationsAuto: stationsAutoData,
+            id: segment.id,
+          }
+
+          return segmentData
+        }
+
+        function createStationDataJson(station) {
+          var stationData = {
+            position: { x: station.position.x, y: station.position.y },
+            id: station.id,
+            name: station.name,
+            offsetFactor: station.offsetFactor,
+          }
+          return stationData
         }
 
         function createTrackData(track) {
@@ -1412,7 +1605,6 @@
         function loadMap(mapJSON) {
           console.log('loadMap')
           if (!mapJSON) {
-            // mapJSON = '{"tracks":[{"id":"15479b48-a900-438b-a0fa-2da8c77729af","stations":[{"position":{"x":200,"y":165},"id":"b4212813","name":"station"},{"position":{"x":535,"y":424},"id":"adc99f13","name":"station"},{"position":{"x":806,"y":119},"id":"ebad26f4","name":"station"}],"stationsMinor":[{"position":{"x":274.22056274847716,"y":269.22056274847716},"id":"712c3721","name":"station","stationA":"b4212813","stationB":"adc99f13"},{"position":{"x":341.3700576850888,"y":336.3700576850888},"id":"fb50a4e2","name":"station","stationA":"b4212813","stationB":"adc99f13"},{"position":{"x":408.5195526217004,"y":403.5195526217004},"id":"6c52a2bb","name":"station","stationA":"b4212813","stationB":"adc99f13"},{"position":{"x":634.7959415460184,"y":354.2040584539816},"id":"2f8dadac","name":"station","stationA":"adc99f13","stationB":"ebad26f4"},{"position":{"x":697.5208152801713,"y":291.4791847198287},"id":"f99d3a55","name":"station","stationA":"adc99f13","stationB":"ebad26f4"},{"position":{"x":760.2456890143242,"y":228.7543109856758},"id":"61b3fb5a","name":"station","stationA":"adc99f13","stationB":"ebad26f4"}]},{"id":"e93fb48a-518f-4f29-aa6f-1e395233cc09","stations":[{"position":{"x":209,"y":104},"id":"ce3ea5bf","name":"station"},{"position":{"x":400,"y":104},"id":"2ce21052","name":"station"},{"position":{"x":928,"y":354},"id":"292957b8","name":"station"}],"stationsMinor":[{"position":{"x":272.6666666666667,"y":104},"id":"6fee351c","name":"station","stationA":"ce3ea5bf","stationB":"2ce21052"},{"position":{"x":336.3333333333333,"y":104},"id":"325fe14a","name":"station","stationA":"ce3ea5bf","stationB":"2ce21052"},{"position":{"x":542.2817459305202,"y":104},"id":"074eef3a","name":"station","stationA":"2ce21052","stationB":"292957b8"},{"position":{"x":684.5634918610405,"y":104},"id":"1fba151c","name":"station","stationA":"2ce21052","stationB":"292957b8"},{"position":{"x":820.3205448016022,"y":216.3205448016022},"id":"5a39e0ba","name":"station","stationA":"2ce21052","stationB":"292957b8"}]}]}'
             mapJSON = '{"tracks":[{"id":"3794c750-6605-49df-b810-aa5b0ebb42e8","segmentStyle":{"strokeColor":"red","strokeWidth":8,"selectionColor":"green","fullySelected":false},"stations":[{"position":{"x":152,"y":239},"id":"3fe7243d","name":"station"},{"position":{"x":687,"y":495},"id":"995a2376","name":"station"}],"stationsMinor":[]},{"id":"6fe22ae9-cd61-4705-aa2d-c457e11901e9","segmentStyle":{"strokeColor":"blue","strokeWidth":8,"selectionColor":"green","fullySelected":false},"stations":[{"position":{"x":174,"y":142},"id":"8cb86074","name":"station"},{"position":{"x":764,"y":433},"id":"882322b8","name":"station"}],"stationsMinor":[]}]}'
             mapJSON = JSON.parse(mapJSON)
           }
@@ -1509,6 +1701,7 @@
         module.exports = {
           saveMap: saveMap,
           loadMap: loadMap,
+          saveMapD3: saveMapD3,
         }
 
         /***/
@@ -1602,7 +1795,7 @@
         function createRevision(map) {
           console.log('createRevision')
           currentRevision++
-          var mapDataString = serialize.saveMap(map)
+          var mapDataString = serialize.saveMap(map, true)
           if (currentRevision >= revisions.length) {
             revisions.push(mapDataString)
           } else {
@@ -1752,7 +1945,11 @@
           var mapElements = []
           for (var i in map.tracks) {
             var trackElements = createTrackElements(map.tracks[i], onRemoveStation)
-            mapElements.push({ track: map.tracks[i], stationElements: trackElements.stationElements, segmentElements: trackElements.segmentElements })
+            mapElements.push({
+              track: map.tracks[i],
+              stationElements: trackElements.stationElements,
+              segmentElements: trackElements.segmentElements,
+            })
           }
           return mapElements
         }
@@ -1764,7 +1961,10 @@
             stationElements.push(stationElement)
           }
           var segmentElements = createSegmentElements(track)
-          return { stationElements: stationElements, segmentElements: segmentElements }
+          return {
+            stationElements: stationElements,
+            segmentElements: segmentElements,
+          }
         }
 
         function createStationElement(station, track) {
@@ -1922,7 +2122,6 @@
           minorstation: 'minorstation',
           select: 'select',
           createConnection: 'createConnection',
-          // sharestation: 'sharestation',
           movestation: 'movestation',
           selectline: 'selectline',
         }
@@ -2036,7 +2235,6 @@
         function selectStation(stationClicked) {
           console.log('stationClicked: ' + stationClicked.id)
           if (selectedStation && stationClicked.id !== selectedStation.id) {
-            console.log('selectedStation: ' + selectedStation.id)
             selectedStation.deselect()
           }
           stationClicked.toggleSelect()
@@ -2048,13 +2246,11 @@
             selectedStation = null
             $('#selected-station').html('none')
           }
-          console.log('toggled, selectedStation: ' + selectedStation)
 
           map.draw(drawSettings)
         }
 
         function onClickMajorStationMode(event) {
-          console.log('onClickMajorStation')
           console.log('segmentClicked: ' + segmentClicked)
           if (segmentClicked) {
             console.log('major station - segment clicked')
@@ -2067,6 +2263,7 @@
           if (hitResult) {
             var stationClicked = getStationClicked(hitResult, false)
             if (stationClicked && selectedStation) {
+              // click on existing station to create a segment between two stations
               console.log('station clicked')
               if (stationClicked.id !== selectedStation.id && !stationClicked.offsetFactor && !selectedStation.offsetFactor) {
                 currentTrack.createSegment(stationClicked, selectedStation)
@@ -2081,6 +2278,7 @@
               MetroFlow.revision.createRevision(map)
               return
             }
+            // click on existing segment to create a new minor station
             var currentSegment = getSegmentClicked(hitResult)
             if (currentSegment) {
               var offsetFactor = currentSegment.getOffsetOf(event.point) / currentSegment.length()
@@ -2093,7 +2291,7 @@
               return
             }
           } else {
-            // click on empty space
+            // click on empty space to create a new station
             console.log('selectedStation: ' + selectedStation)
             if (!selectedStation) {
               selectedStation = currentTrack.lastAddedStation()
@@ -2108,7 +2306,6 @@
             // }
             console.log('selectedStation: ' + selectedStation)
             selectStation(stationNew)
-            console.log('debug')
             // TODO: create elements based on track/map observer in interaction
             var stationElement = MetroFlow.interaction.createStationElement(stationNew, currentTrack, onRemoveStation)
             contextmenu.createStationContextMenu(stationElement.attr('id'), onRemoveStation)
@@ -2149,6 +2346,7 @@
         function onClickSelectMode(event) {
           var hitResult = project.hitTest(event.point, hitOptions)
           if (hitResult) {
+            // select the station and deselect the segment
             var stationClicked = getStationClicked(hitResult, true)
             if (stationClicked) {
               console.log('selectedStation', selectedStation)
@@ -2161,6 +2359,7 @@
               return
             }
 
+            // select the segment and deselect the station
             var newSegmentClicked = getSegmentClicked(hitResult)
             if (!newSegmentClicked) return
             if (segmentClicked && segmentClicked.id != newSegmentClicked.id) {
@@ -2306,11 +2505,13 @@
           toolbar.setUndoAction(onUndoButtonClicked)
           toolbar.setRedoAction(onRedoButtonClicked)
           toolbar.setSaveMapAction(saveMapClicked)
+          toolbar.setExportD3Action(exportToD3Clicked)
           toolbar.setLoadMapAction(loadMapClicked)
 
           sidebar.setToggleMinorNamesAction(minorNamesCheckboxClicked)
           sidebar.setToggleDebugAction(debugCheckboxClicked)
           sidebar.setExampleMapAction(loadExampleMapClicked)
+          sidebar.setLatestMapAction(loadLatestMapClicked)
           sidebar.setTrackColorChangeAction(onTrackColorChanged)
           sidebar.setTrackWidthSliderChangeAction(onTrackWidthChanged)
           sidebar.setStationRadiusSliderChangeAction(onStationRadiusChanged)
@@ -2482,13 +2683,6 @@
             mode = modes.createConnection
           }
 
-          // function newShareStationButtonClicked() {
-          //   console.log('new share station button clicked')
-          //   shareStationA = null
-          //   shareStationB = null
-          //   mode = modes.sharestation
-          // }
-
           function moveStationButtonClicked() {
             console.log('move station button clicked')
             $('.fa-lg').removeClass('fa-border')
@@ -2530,16 +2724,56 @@
 
           function saveMapClicked() {
             console.log('save map button clicked')
-            var mapJSONString = MetroFlow.serialize.saveMap(map)
+            var mapJSONString = MetroFlow.serialize.saveMap(map, true)
             var data = 'text/json;charset=utf-8,' + encodeURIComponent(mapJSONString)
             var a = document.createElement('a')
             a.href = 'data:' + data
             a.download = 'data.json'
             a.innerHTML = 'download JSON'
-
-            // var container = document.getElementById('toolbar');
-            // container.appendChild(a);
             a.click()
+          }
+
+          function exportToD3Clicked() {
+            console.log('save d3 map button clicked')
+            var paperMapJSON = MetroFlow.serialize.saveMap(map, false)
+            var d3MapJSON = MetroFlow.serialize.saveMapD3(map, false)
+
+            if (!d3MapJSON) {
+              alert('Map is not compliant with designing rules.')
+              return
+            }
+
+            $.post({
+              url: 'http://localhost:1337/chart/map',
+              data: {
+                paperJson: JSON.stringify(paperMapJSON),
+                d3Json: JSON.stringify(d3MapJSON),
+              },
+              xhrFields: {
+                withCredentials: true,
+              },
+              crossDomain: true,
+              success: function (d) {
+                console.log(d)
+                var data = 'text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(d))
+                var a = document.createElement('a')
+                a.href = 'data:' + data
+                a.download = 'd3-data.json'
+                a.innerHTML = 'download JSON'
+                a.click()
+              },
+              error: function (xhr, textStatus, error) {
+                if (xhr.status === 403) {
+                  alert('Only Administrator can export json to Mapplication. Please use "save map" to download json to local.')
+                } else {
+                  if (xhr.responseText) {
+                    alert(xhr.responseText)
+                  } else {
+                    alert(error)
+                  }
+                }
+              },
+            })
           }
 
           function loadMapClicked(event) {
@@ -2614,6 +2848,25 @@
           function loadExampleMapClicked(filename) {
             prepareLoadMap()
             loadMapFile('maps/' + filename)
+          }
+
+          function loadLatestMapClicked() {
+            console.log('clicked')
+            prepareLoadMap()
+            $.ajax({
+              url: 'http://localhost:1337/chart/map',
+              xhrFields: {
+                withCredentials: true,
+              },
+              crossDomain: true,
+              success: function (d) {
+                console.log('success')
+                console.log(d)
+                loadMapJson(d[0].paperJson)
+              },
+            }).fail(function () {
+              alert('Only Administrator can export json to Mapplication. Please use "save map" to download json to local.')
+            })
           }
 
           function prepareUndoRedo() {
@@ -2740,18 +2993,11 @@
           $('.badge.bg-secondary').attr('style', 'background-color: ' + currentTrack.segmentStyle.strokeColor + '!important')
           $('#track-name').val(currentTrack.id)
           $('#track-name').data('trackid', currentTrack.id)
-          //$('#track-name').bind('change', trackNameInputChange)
           $('#track-name-change').bind('click', trackNameInputChange)
 
           updateTableTrack(track)
 
           function trackNameInputChange() {
-            console.log('trackNameInputChange')
-            // var trackId = $(this).data('trackid')
-            // console.log('trackid', trackId)
-            // var station = track.findStation(stationId)
-            // console.log('station', station)
-            // console.log('value', $(this).val())
             currentTrack.id = $('#track-name').val()
             console.log('track: ' + currentTrack.id)
             signalTrackInfoChanged(currentTrack)
@@ -2760,13 +3006,16 @@
 
         function setExampleMapAction(callback) {
           $('#button-example-map1').bind('click', loadFilename)
-          $('#button-example-map2').bind('click', loadFilename)
 
           function loadFilename() {
             var filename = $(this).data('filename')
             console.log(filename)
             callback(filename)
           }
+        }
+
+        function setLatestMapAction(callback) {
+          $('#button-latest-map').bind('click', callback)
         }
 
         function setTrackColorChangeAction(callback) {
@@ -2852,7 +3101,6 @@
 
           function addStationRow(station) {
             var markup = "<tr><td><input class='form-control form-control-sm' id='station-row-" + station.id + "' type='text' name='station' value='" + station.name + "' data-stationid='" + station.id + "'><button button id = 'button-remove-station-" + station.id + "' type='button' class='btn btn-outline-primary btn-sm' name='station' value='" + station.name + "' data-stationid='" + station.id + "' > remove</button ></td ></tr>"
-            //var markup = "<tr><td><input id='station-row-" + station.id + "' type='text' name='station' value='" + station.name + "' data-stationid='" + station.id + "'></td ></tr>"
             $('#track-table tbody').append(markup)
             $('#station-row-' + station.id).bind('change', stationNameInputChange)
             $('#button-remove-station-' + station.id).bind('click', stationNameRemove)
@@ -2911,6 +3159,7 @@
         module.exports = {
           notifyTrackChanged: notifyTrackChanged,
           setExampleMapAction: setExampleMapAction,
+          setLatestMapAction: setLatestMapAction,
           setCurrentTrack: setCurrentTrack,
           setTrackColorChangeAction: setTrackColorChangeAction,
           setTrackWidthSliderChangeAction: setTrackWidthSliderChangeAction,
@@ -2971,11 +3220,6 @@
           buttonNewConnection.bind('click', callback)
         }
 
-        // function setShareStationAction(callback) {
-        //   var buttonShareStation = $('#button-share-station')
-        //   buttonShareStation.bind('click', callback)
-        // }
-
         function setMoveStationButtonAction(callback) {
           var buttonMoveStation = $('#button-move-station')
           buttonMoveStation.bind('click', callback)
@@ -3002,6 +3246,11 @@
           button.bind('click', callback)
         }
 
+        function setExportD3Action(callback) {
+          var button = $('#button-export-d3')
+          button.bind('click', callback)
+        }
+
         function setLoadMapAction(callback) {
           document.getElementById('file-input').addEventListener('change', callback, false)
         }
@@ -3019,6 +3268,7 @@
           setToggleSnapAction: setToggleSnapAction,
           setCalcTextPositionsAction: setCalcTextPositionsAction,
           setSaveMapAction: setSaveMapAction,
+          setExportD3Action: setExportD3Action,
           setLoadMapAction: setLoadMapAction,
         }
 
