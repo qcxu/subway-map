@@ -345,10 +345,12 @@
             if (pos > -1) {
               this.stationsAuto.splice(pos, 1)
             }
-            pos = this.stationsUser.indexOf(station)
-            if (pos > -1) {
-              this.stationsUser.splice(pos, 1)
-            }
+            if (this.stationsUser) {
+              pos = this.stationsUser.indexOf(station)
+              if (pos > -1) {
+                this.stationsUser.splice(pos, 1)
+              }
+            }    
           },
           getAllOnSegmentStations: function () {
             var stations = []
@@ -1013,11 +1015,12 @@
                   station.notifyBeforeRemove()
                   track.stationsMinor.splice(pos, 1)
                 }
-                pos = track.stationsUser.indexOf(station)
-                if (pos > -1) {
-                  station.notifyBeforeRemove()
-                  track.stationsUser.splice(pos, 1)
-                }
+                if (this.stationsUser) {
+                  pos = this.stationsUser.indexOf(station)
+                  if (pos > -1) {
+                    this.stationsUser.splice(pos, 1)
+                  }
+                }  
               }
             }
             removeFromTrackState(this, id)
@@ -1615,6 +1618,8 @@
           for (var i in mapJSON.connections) {
             var connection = loadConnections(map, mapJSON.connections[i])
           }
+          console.log('map')
+          console.log(map)
           return map
         }
 
@@ -1639,6 +1644,7 @@
             var segmentData = trackData.segments[i]
             loadSegment(map, track, segmentData)
           }
+          track.notifyAllObservers()
           return track
         }
 
@@ -2233,7 +2239,7 @@
         }
 
         function selectStation(stationClicked) {
-          console.log('stationClicked: ' + stationClicked.id)
+          console.log('stationClicked: ' + stationClicked.name)
           if (selectedStation && stationClicked.id !== selectedStation.id) {
             selectedStation.deselect()
           }
@@ -2273,6 +2279,7 @@
                 console.log('connect station', stationClicked.id)
                 console.log(currentTrack.stationsMajor)
                 currentTrack.notifyAllObservers()
+                sidebar.notifyTrackChanged(currentTrack)
               }
               map.draw(drawSettings)
               MetroFlow.revision.createRevision(map)
@@ -2314,6 +2321,7 @@
               var element = segmentElements[i]
               contextmenu.createSegmentContextMenu(element.attr('id'), createStationMinorOnMap)
             }
+            sidebar.notifyTrackChanged(currentTrack)
             MetroFlow.revision.createRevision(map)
             return
           }
@@ -2813,6 +2821,7 @@
             MetroFlow.revision.createRevision(newMap)
             var mapElements = MetroFlow.interaction.createMapElements(newMap, onRemoveStation)
             createContextMenusMapElements(mapElements)
+            console.log('finishLoadMap')
           }
 
           function createContextMenusMapElements(mapElements) {
@@ -2836,6 +2845,10 @@
               setCurrentTrack(newMap.tracks[0])
             }
             finishLoadMap(newMap)
+            for (var i in newMap.tracks) {
+              sidebar.notifyTrackChanged(newMap.tracks[i])
+            }
+            newMap.tracks[0].notifyAllObservers()
           }
 
           function loadMapFile(filepath) {
@@ -2884,9 +2897,9 @@
             if (currentTrackId) {
               track = map.findTrack(currentTrackId)
             }
-            if (track && map.tracks) {
+            if (!track && map.tracks) {
               track = map.tracks[map.tracks.length - 1]
-            } else {
+            } else if (!map.tracks) {
               track = createTrack()
             }
             setCurrentTrack(track)
@@ -2966,9 +2979,8 @@
         tool.onKeyDown = onKeyDown
 
         /***/
-      },
-      /* 16 */
-      /***/ function (module, exports, __webpack_require__) {
+      }, // sidebar.js
+      /* 16 */ /***/ function (module, exports, __webpack_require__) {
         __webpack_require__(1)
         __webpack_require__(9)
 
@@ -3173,9 +3185,8 @@
         }
 
         /***/
-      },
-      /* 17 */
-      /***/ function (module, exports) {
+      }, // toolbar.js
+      /* 17 */ /***/ function (module, exports) {
         $(function () {
           var buttonMajorStation = $('#button-major-station')
           var buttonMinorStation = $('#button-minor-station')
@@ -3273,9 +3284,8 @@
         }
 
         /***/
-      },
-      /* 18 */
-      /***/ function (module, exports, __webpack_require__) {
+      }, // contextmenu.js
+      /* 18 */ /***/ function (module, exports, __webpack_require__) {
         __webpack_require__(9)
 
         function createStationContextMenu(stationElementId, onRemoveStation) {
