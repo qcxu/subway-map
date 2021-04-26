@@ -2132,7 +2132,7 @@
           selectline: 'selectline',
         }
 
-        var mode = modes.majorstation
+        var mode = modes.select
 
         var hitOptions = {
           segments: true,
@@ -2156,7 +2156,7 @@
           var newMap = MetroFlow.map.createMap()
           setNewMap(newMap)
           setCurrentTrack(createTrack())
-          $('#button-major-station').addClass('fa-border')
+          $('#button-select').addClass('fa-border')
           //MetroFlow.zoom.enableZoomOnCanvas(map)
         }
 
@@ -2300,6 +2300,12 @@
           } else {
             // click on empty space to create a new station
             console.log('selectedStation: ' + selectedStation)
+            if (selectedStation) {
+              if (!currentTrack.findStation(selectedStation.id)) {
+                alert("Currently selected station is not on the current track, you can't create a new station connecting from this station. Please select the proper track first.")
+                return
+              }
+            }
             if (!selectedStation) {
               selectedStation = currentTrack.lastAddedStation()
             }
@@ -2476,7 +2482,7 @@
 
         function onMouseDrag(event) {
           dragging = true
-          console.log('onMouseDrag')
+          //console.log('onMouseDrag')
           //    if (mode == modes.select) {
           //        console.log('panning', event.delta);
           //        var offset = startPosition - event.point;
@@ -2484,7 +2490,7 @@
           //        return;
           //    }
           console.log(selectedStation)
-          if (selectedStation) {
+          if (selectedStation && mode !== modes.majorstation) {
             // if (mode == modes.movestation && selectedStation) {
             var position = event.point
             if (doSnap && selectedStation.doSnap) {
