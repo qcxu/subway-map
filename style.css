@@ -88,6 +88,12 @@ canvas[resize] {
   padding-left: 10px;
 }
 
+.toolbar-buttons .form-label {
+  padding-left: 10px;
+  color: #0d6efd;
+  font-size: .875rem;
+}
+
 .track-table-container {
   overflow-y: scroll;
   max-height: 600px;
